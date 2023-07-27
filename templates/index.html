@@ -1,0 +1,101 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="de"> <!-- Set language to German (de) -->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>German Speech Recognition Chat</title>
+  <link rel="stylesheet" href="{% static 'style.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-tXDa5cepoDBLc5B4zW4LzPg/qv5EKTYbsJ4kdO0z4PDUSyoN8IX+AXCx6oB7LQOgOAgK2hMpk2r5/UCCIVFKA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+</head>
+<body>
+  
+<div class="main-container">
+  <div id="chatbot-container">
+    <!-- Chatbot responses will be displayed here -->
+  </div>
+
+  <form id="form" method="get" accept-charset="utf-8">
+    <input type="text" name="botvalue" id="botvalue" placeholder="Sag etwas"/> <!-- Translate the placeholder text to German -->
+    <button type="submit" class="submit fab fa-telegram-plane"></button>
+  </form>
+
+  <button id="btn" type="button" onclick="startVoice()" class="fa fa-microphone"> Spracherkennung starten</button> <!-- Translate the button text to German -->
+
+</div>
+<!-- Make sure to include jQuery or fetch API for making AJAX requests -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+  let container = document.getElementById('chatbot-container');
+  let btn = document.getElementById('btn');
+  let form = document.getElementById('form');
+
+  // Enable German Speech Recognition
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'de-DE'; // Set the language to German (Germany)
+
+  recognition.onstart = () => {
+    console.log('Voice recognition is active');
+    btn.innerHTML = "Sprache aktiv";
+  }
+
+  recognition.onend = () => {
+    btn.innerHTML = "Spracherkennung starten";
+  }
+
+  function botVoice(message) {
+    // Make an AJAX request to the backend API to get the response
+    $.ajax({
+      url: 'text_answer_view', // Replace with your Django DRF API endpoint URL
+      method: 'POST',
+      data: { 'message': message },
+      success: function (response) {
+        const speech = new SpeechSynthesisUtterance();
+        speech.text = response.text; // Use the response from the API as the speech text
+
+        container.innerHTML += `<p class="speech">${speech.text}</p>`;
+
+        speech.volume = 1;
+        speech.rate = 1;
+        speech.pitch = 1;
+
+        window.speechSynthesis.speak(speech);
+      },
+      error: function (error) {
+        console.error('Error:', error);
+      }
+    });
+  }
+
+  recognition.onresult = (event) => {
+    const current = event.resultIndex;
+    const transcript = event.results[current][0].transcript;
+    container.innerHTML += `<p class="recorder">${transcript}</p>`;
+    botVoice(transcript.toLowerCase());
+  }
+
+  function startVoice() {
+    recognition.start();
+  }
+
+  form.onsubmit = (e) => {
+    e.preventDefault();
+    let formInput = document.getElementById('botvalue').value;
+    if (formInput == '') {
+      return false;
+    } else {
+      container.innerHTML += `<p class="recorder">${formInput}</p>`;
+      botVoice(formInput.toLowerCase());
+      form.reset();
+      return true;
+    }
+  }
+</script>
+
+{% comment %} <script src="{% static 'script.js' %}"></script> {% endcomment %}
+</body>
+</html>
+
